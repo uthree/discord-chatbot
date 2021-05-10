@@ -130,5 +130,5 @@ dmypy.json
 
 # other
 .log
-/token.yml
+token.yml
 seq2seq.pkl
