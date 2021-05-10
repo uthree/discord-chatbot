@@ -27,6 +27,7 @@ class ChatBot(commands.Bot):
     async def on_ready(self):
         # seq2seqレスポンダーを読み込み
         self.s2s = seq2seq.Seq2SeqResponder.load("./seq2seq.pkl")
+        
         # ゲームを変更。
         game = discord.Game("Send me direct message or talk in \"bot\" channel.")
         await self.change_presence(status=discord.Status.online, activity=game)
@@ -41,7 +42,10 @@ class ChatBot(commands.Bot):
 
     async def on_direct_message(self, message):
         req = message.content
-        reply = self.s2s.predict_from_sentences([req], flag_gpu=False)[0]
+        noise_gain = 0.05
+        if len(message.content) < 5:
+            noise_gain = 0.2
+        reply = self.s2s.predict_from_sentences([req], flag_gpu=False, noise_gain=noise_gain)[0]
         print(f"{req} -> {reply}")
         await message.channel.send(reply)
 
