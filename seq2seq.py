@@ -82,9 +82,9 @@ class Seq2SeqResponder:
         output_data = data[1:-1]
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.s2s.to(device)
-        optimizer = optim.AdamW(self.s2s.parameters(), lr=0.0003)
+        optimizer = optim.AdamW(self.s2s.parameters(), lr=0.0005)
         criterion = nn.CrossEntropyLoss().to(device)
-        scheduler = optim.lr_scheduler.StepLR(optimizer, 1, gamma=0.99)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, 1, gamma=0.8)
         for step in range(0, steps):
             print("="*60)
             print(f"STEP # {step+1} / {steps}")
@@ -142,10 +142,8 @@ class Seq2SeqResponder:
         t = torch.cat((torch.full((output.size(0), 1), self.padding_idx).to(device), output), axis=1)
         return t[:, :-1] # right shift
 
-    def predict_with_batch(self, input_data, batch_size=500, noise_gain=0.0, flag_gpu = True):
+    def predict_with_batch(self, input_data, batch_size=500, noise_gain=0.0):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if not flag_gpu:
-            device = torch.device("cpu")
         self.s2s.eval()
         self.s2s.to(device)
         input_batch = test2batch(input_data, batch_size=batch_size)
@@ -171,9 +169,9 @@ class Seq2SeqResponder:
             results = torch.cat(results)
         return results
 
-    def predict_from_sentences(self, sentences, batch_size=500, noise_gain=0.0, flag_gpu=True):
+    def predict_from_sentences(self, sentences, batch_size=500, noise_gain=0.0):
         input_data = np.array([self.sentence_to_id(s, self.sentence_length) for s in sentences]) 
-        results = self.predict_with_batch(input_data, batch_size=batch_size, noise_gain=noise_gain, flag_gpu=flag_gpu).tolist()
+        results = self.predict_with_batch(input_data, batch_size=batch_size, noise_gain=noise_gain).tolist()
         return [ self.sp.DecodeIdsWithCheck(s) for s in results ]
     
     @classmethod
