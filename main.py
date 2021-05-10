@@ -6,6 +6,7 @@ import traceback
 
 from discord.ext import commands
 import discord as discord
+import seq2seq
 
 default_token_file = {
     'using': 'main',
@@ -22,17 +23,27 @@ class ChatBot(commands.Bot):
                 self.load_extension(cog)
             except Exception:
                 traceback.print_exc()
+
+    async def on_ready(self):
+        # seq2seqレスポンダーを読み込み
+        self.s2s = seq2seq.Seq2SeqResponder.load("./seq2seq.pkl")
+        # ゲームを変更。
+        game = discord.Game("Send me direct message or talk in \"bot\" channel.")
+        await self.change_presence(status=discord.Status.online, activity=game)
     
     async def on_message(self, message):
         # 送信者が自分自身であれば反応しない。
         if message.author.id == (await self.application_info()).id:
             return
 
-        if type(message.channel) == discord.DMChannel:
+        if type(message.channel) == discord.DMChannel or message.channel.name == "bot":
             await self.on_direct_message(message)
 
     async def on_direct_message(self, message):
-        await message.channel.send("fuck you")
+        req = message.content
+        reply = self.s2s.predict_from_sentences([req], flag_gpu=False)[0]
+        print(f"{req} -> {reply}")
+        await message.channel.send(reply)
 
 
 def main():
